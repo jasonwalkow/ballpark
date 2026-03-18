@@ -106,7 +106,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
     {
       id: 'icon',
       name: 'Dot Matrix Icon',
-      description: 'Convert images into 16x16 dot matrix icons with customizable colors and threshold controls.',
+      description: 'Convert images into 24x24 dot matrix icons with customizable colors and threshold controls.',
       icon: (
         <svg className="w-12 h-12 text-bp-blue" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7"/>
@@ -115,7 +115,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
           <rect x="3" y="14" width="7" height="7"/>
         </svg>
       ),
-      features: ['16x16 grid', 'Auto-invert detection', 'SVG & PNG export']
+      features: ['24x24 grid', 'Auto-invert detection', 'SVG & PNG export']
     },
     {
       id: 'art',
@@ -441,7 +441,7 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
       {/* Right column: meta card */}
       <div className="bg-transparent border border-bp-blue rounded p-4 md:p-8 flex flex-col justify-between space-y-4 group-hover/callout:bg-bp-blue gap-8">
         <div className="flex flex-col gap-3 text-bp-blue">
-          <div className="w-8 h-8 flex items-center justify-center text-sm uppercase font-eyebrow rounded-full bg-bp-blue text-bp-chalk group-hover/callout:bg-bp-chalk group-hover/callout:text-bp-blue transition-colors">
+          <div className="w-8 h-8 flex items-center justify-center text-sm uppercase font-eyebrow rounded-full bg-bp-blue text-bp-eyeblack group-hover/callout:bg-bp-chalk group-hover/callout:text-bp-blue transition-colors">
             {badgeDisplay}
           </div>
           <h2 className="text-xl lg:text-4xl tracking-tight group-hover/callout:text-bp-chalk">

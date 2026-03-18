@@ -78,7 +78,7 @@ function HamburgerMenu({ currentTool, onToolChange }) {
 
   const tools = [
     { id: 'home', name: '🏠 Home', description: 'Back to tool directory' },
-    { id: 'icon', name: 'Dot Matrix Icon', description: '16x16 icon generator' },
+    { id: 'icon', name: 'Dot Matrix Icon', description: '24x24 icon generator' },
     { id: 'art', name: 'Dot Matrix Art', description: 'Full image converter' },
     { id: 'pattern', name: 'Dot Pattern Generator', description: 'Generative corner patterns' },
     { id: 'billboard', name: 'Dot Billboard Text', description: 'Scrolling text animation' },
@@ -135,7 +135,7 @@ function DotMatrixIconTool() {
   const [bgColor, setBgColor] = useState("#0a0a0a");
   const [invertMode, setInvertMode] = useState(false);
 
-  const gridSize = 16;
+  const gridSize = 24;
   const dotSize = 2;
   const gap = 1;
 
@@ -372,7 +372,7 @@ ${crispCircles}  </g>
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-zinc-400">Preview</h2>
-              <span className="text-xs font-mono text-zinc-500">16x16 dots</span>
+              <span className="text-xs font-mono text-zinc-500">24x24 dots</span>
             </div>
             <div className="rounded border border-zinc-800 p-6 sm:p-10 flex items-center justify-center min-h-[400px]" style={{ backgroundColor: bgColor }}>
               <canvas ref={canvasRef} className="max-w-full h-auto rounded" />
@@ -1719,7 +1719,7 @@ function LandingPage({ onSelectTool }) {
     {
       id: 'icon',
       name: 'Dot Matrix Icon',
-      description: 'Convert images into 16x16 dot matrix icons with customizable colors and threshold controls.',
+      description: 'Convert images into 24x24 dot matrix icons with customizable colors and threshold controls.',
       icon: (
         <svg className="w-12 h-12 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7"/>
@@ -1728,7 +1728,7 @@ function LandingPage({ onSelectTool }) {
           <rect x="3" y="14" width="7" height="7"/>
         </svg>
       ),
-      features: ['16x16 grid', 'Auto-invert detection', 'SVG & PNG export']
+      features: ['24x24 grid', 'Auto-invert detection', 'SVG & PNG export']
     },
     {
       id: 'art',
@@ -1889,7 +1889,7 @@ export default function App() {
     },
     icon: {
       title: 'Dot Matrix Icon',
-      description: '16x16 icon generator',
+      description: '24x24 icon generator',
       icon: (
         <svg className="w-3 h-3 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7"/>

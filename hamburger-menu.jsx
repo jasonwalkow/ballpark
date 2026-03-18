@@ -5,7 +5,7 @@ const HamburgerMenu = ({ currentTool, onToolChange }) => {
 
   const tools = [
     { id: 'home', name: '🏠 Home', description: 'Back to tool directory' },
-    { id: 'icon', name: 'Dot Matrix Icon', description: '16x16 icon generator' },
+    { id: 'icon', name: 'Dot Matrix Icon', description: '24x24 icon generator' },
     { id: 'art', name: 'Dot Matrix Art', description: 'Full image converter' },
     { id: 'pattern', name: 'Dot Pattern Generator', description: 'Generative corner patterns' },
     { id: 'billboard', name: 'Dot Billboard Text', description: 'Scrolling text animation' },

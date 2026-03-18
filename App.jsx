@@ -23,7 +23,7 @@ const toolInfo = {
   },
   icon: {
     title: 'Dot Matrix Icon',
-    description: '16x16 icon generator',
+    description: '24x24 icon generator',
     icon: (
       <svg className="w-3 h-3 text-bp-chalk" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <rect x="3" y="3" width="7" height="7"/>
@@ -116,7 +116,7 @@ const FloatingToolNav = ({ currentTool, onToolChange, isDayGame }) => {
               className={[
                 'relative inline-flex items-center justify-center rounded-full h-9',
                 isHome ? 'w-9' : 'w-9 md:w-auto md:px-3',
-                'uppercase font-eyebrow text-xs tracking-tightish transition-colors',
+                'uppercase font-eyebrow text-xs transition-colors',
                 active
                   ? 'bg-bp-blue text-bp-chalk'
                   : isDayGame

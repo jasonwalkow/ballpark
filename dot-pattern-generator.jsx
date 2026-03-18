@@ -10,13 +10,13 @@ const DotPatternGeneratorTool = () => {
   const [height, setHeight] = usePatternState(800);
   const [bgColor, setBgColor] = usePatternState('#0e0e0e');
   const [transparent, setTransparent] = usePatternState(false);
-  const [gridSpacing, setGridSpacing] = usePatternState(25);
-  const [dotSize, setDotSize] = usePatternState(8);
-  const [cornerIntensity, setCornerIntensity] = usePatternState(0.99);
-  const [falloff, setFalloff] = usePatternState(0.50);
-  const [centerQuietRadius, setCenterQuietRadius] = usePatternState(0.40);
-  const [centerSoftness, setCenterSoftness] = usePatternState(0.20);
-  const [organicJitter, setOrganicJitter] = usePatternState(0.00);
+  const [gridSpacing, setGridSpacing] = usePatternState(17);
+  const [dotSize, setDotSize] = usePatternState(10);
+  const [cornerIntensity, setCornerIntensity] = usePatternState(0.57);
+  const [falloff, setFalloff] = usePatternState(0.31);
+  const [centerQuietRadius, setCenterQuietRadius] = usePatternState(0.34);
+  const [centerSoftness, setCenterSoftness] = usePatternState(0.56);
+  const [organicJitter, setOrganicJitter] = usePatternState(0.45);
   const [seed, setSeed] = usePatternState('pattern-001');
   
   const [colors, setColors] = usePatternState([
@@ -49,6 +49,7 @@ const DotPatternGeneratorTool = () => {
       ctx.fillRect(0, 0, width, height);
     }
 
+    // Used for probability randomness so the dot field stays organic.
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
       hash = ((hash << 5) - hash) + seed.charCodeAt(i);
@@ -62,6 +63,15 @@ const DotPatternGeneratorTool = () => {
     const cols = Math.floor(width / gridSpacing);
     const rows = Math.floor(height / gridSpacing);
     let count = 0;
+
+    // Coarse color clustering (swatches) so adjacent dots tend to share colors.
+    // Uses a separate deterministic hash so we don't introduce per-dot color jitter.
+    let seedHash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      seedHash = ((seedHash << 5) - seedHash) + seed.charCodeAt(i);
+      seedHash |= 0;
+    }
+    const clusterCells = Math.max(2, Math.round(60 / gridSpacing));
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
@@ -82,7 +92,8 @@ const DotPatternGeneratorTool = () => {
 
         const cornerValue = Math.pow(1 - minDist, 1 + falloff * 3);
 
-        const distCenter = Math.sqrt((nx - 0.5) * (nx - 0.5) + (ny - 0.5) * (ny - 0.5)) * 2;
+        // Normalize center distance to 0..1 (0 at center, 1 at corners)
+        const distCenter = Math.sqrt((nx - 0.5) * (nx - 0.5) + (ny - 0.5) * (ny - 0.5)) / Math.SQRT1_2;
         
         let centerFactor = 1;
         if (distCenter < centerQuietRadius) {
@@ -95,8 +106,10 @@ const DotPatternGeneratorTool = () => {
         const probability = cornerIntensity * cornerValue * centerFactor;
 
         if (rand() < probability) {
-          const colorSeed = Math.floor(nx * 17 + ny * 23 + rand() * 5);
-          const color = colors[colorSeed % colors.length];
+          const clusterX = Math.floor(x / clusterCells);
+          const clusterY = Math.floor(y / clusterCells);
+          const clusterHash = (clusterX * 73856093) ^ (clusterY * 19349663) ^ seedHash;
+          const color = colors[Math.abs(clusterHash) % colors.length];
           
           const px = x * gridSpacing + gridSpacing / 2;
           const py = y * gridSpacing + gridSpacing / 2;
@@ -169,6 +182,15 @@ const DotPatternGeneratorTool = () => {
     const cols = Math.floor(width / gridSpacing);
     const rows = Math.floor(height / gridSpacing);
 
+    // Coarse color clustering (swatches) so adjacent dots tend to share colors.
+    // Kept deterministic so the SVG matches the canvas output.
+    let seedHash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      seedHash = ((seedHash << 5) - seedHash) + seed.charCodeAt(i);
+      seedHash |= 0;
+    }
+    const clusterCells = Math.max(2, Math.round(60 / gridSpacing));
+
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n`;
     if (!transparent) svg += `  <rect width="${width}" height="${height}" fill="${bgColor}"/>\n`;
 
@@ -188,7 +210,8 @@ const DotPatternGeneratorTool = () => {
         const d4 = Math.sqrt((1-nx)*(1-nx) + (1-ny)*(1-ny)) / Math.sqrt(2);
         const minDist = Math.min(d1, d2, d3, d4);
         const cornerValue = Math.pow(1 - minDist, 1 + falloff * 3);
-        const distCenter = Math.sqrt((nx-0.5)*(nx-0.5) + (ny-0.5)*(ny-0.5)) * 2;
+        // Normalize center distance to 0..1 (0 at center, 1 at corners)
+        const distCenter = Math.sqrt((nx-0.5)*(nx-0.5) + (ny-0.5)*(ny-0.5)) / Math.SQRT1_2;
         
         let centerFactor = 1;
         if (distCenter < centerQuietRadius) {
@@ -201,8 +224,10 @@ const DotPatternGeneratorTool = () => {
         const probability = cornerIntensity * cornerValue * centerFactor;
 
         if (rand() < probability) {
-          const colorSeed = Math.floor(nx * 17 + ny * 23 + rand() * 5);
-          const color = colors[colorSeed % colors.length];
+          const clusterX = Math.floor(x / clusterCells);
+          const clusterY = Math.floor(y / clusterCells);
+          const clusterHash = (clusterX * 73856093) ^ (clusterY * 19349663) ^ seedHash;
+          const color = colors[Math.abs(clusterHash) % colors.length];
           const px = x * gridSpacing + gridSpacing / 2;
           const py = y * gridSpacing + gridSpacing / 2;
           svg += `  <circle cx="${px}" cy="${py}" r="${dotSize/2}" fill="${color}"/>\n`;
@@ -338,9 +363,31 @@ const DotPatternGeneratorTool = () => {
             <button onClick={randomSeed} className="px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm w-auto">Random seed</button>
           </div>
 
-          <div className="sticky bottom-0 z-10 bg-bp-eyeblack pt-4 border-t border-bp-eyeblack/60 space-y-2 flex flex-col items-end mt-auto">
-            <button onClick={downloadSVG} className="w-auto px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm">Download SVG</button>
-            <button onClick={downloadPNG} className="w-auto px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm">Download PNG</button>
+          <div className="sticky bottom-0 z-10 bg-bp-eyeblack pt-4 border-t border-bp-eyeblack/60 mt-auto">
+            <div className="flex w-full items-center justify-between gap-4">
+              <button
+                onClick={downloadSVG}
+                className="flex items-center gap-2 w-auto px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download SVG
+              </button>
+              <button
+                onClick={downloadPNG}
+                className="flex items-center gap-2 w-auto px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download PNG
+              </button>
+            </div>
           </div>
 
           <p className="text-bp-chalk text-sm text-center">{width} × {height}px • {dotCount} dots</p>

@@ -82,7 +82,7 @@ const DotMatrixIconTool = () => {
   const [bgColor, setBgColor] = useIconState("#0a0a0a");
   const [invertMode, setInvertMode] = useIconState(true);
 
-  const gridSize = 16;
+  const gridSize = 24;
   const dotSize = 2;
   const gap = 1;
 
