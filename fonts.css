@@ -1,0 +1,52 @@
+/* Ballpark typefaces – load from local fonts folder */
+@font-face {
+  font-family: "ABC Oracle";
+  src: url("./fonts/ABCOracle-Book.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "BPDots Regular";
+  src: url("./fonts/BPDots-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "BPDots Bold";
+  src: url("./fonts/BPDots-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Lining (straight) figures + 20% letter spacing for BPDots */
+.font-billboard,
+.font-eyebrow {
+  font-variant-numeric: lining-nums;
+  letter-spacing: 0.15em;
+}
+
+/* Body text style */
+.text-body {
+  font-size: 16px;
+  line-height: 115%;
+  letter-spacing: -0.025em;
+  text-indent: 64px;
+  text-align: justify;
+}
+
+/* Always keep the page background blue (prevents white underlay on scroll) */
+html,
+body {
+  background-color: #1141FF;
+}
+
+@media (min-width: 768px) {
+  .text-body {
+    font-size: 24px;
+  }
+}
