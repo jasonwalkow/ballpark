@@ -107,6 +107,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
       id: 'icon',
       name: 'Dot Matrix Icon',
       description: 'Convert images into 24x24 dot matrix icons with customizable colors and threshold controls.',
+      previewImage: '/images/dot-matrix-icon.png',
       icon: (
         <svg className="w-12 h-12 text-bp-blue" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7"/>
@@ -121,6 +122,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
       id: 'art',
       name: 'Dot Matrix Art',
       description: 'Transform full images into artistic dot patterns with variable resolution and color controls.',
+      previewImage: '/images/dot-matrix-art.png',
       icon: (
         <svg className="w-12 h-12 text-bp-grass" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="1"/>
@@ -140,6 +142,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
       id: 'pattern',
       name: 'Dot Pattern Generator',
       description: 'Create generative corner-biased dot patterns with seeded randomization and multi-color palettes.',
+      previewImage: '/images/dot-pattern-generator.png',
       icon: (
         <svg className="w-12 h-12 text-bp-mustard" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="4" cy="4" r="1" fill="currentColor"/>
@@ -162,6 +165,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
       id: 'billboard',
       name: 'Dot Billboard Text',
       description: 'Create scrolling LED-style text displays with 5x7 dot matrix font and animation controls.',
+      previewImage: '/images/dot-billboard-text.png',
       icon: (
         <svg className="w-12 h-12 text-bp-sky" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <rect x="2" y="6" width="20" height="12" rx="2"/>
@@ -173,9 +177,23 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
       features: ['Scrolling animation', 'Custom text', 'Speed controls']
     },
     {
+      id: 'video',
+      name: 'Dot Matrix Video',
+      description: 'Turn uploaded videos into animated dot-matrix playback with recording and download.',
+      previewImage: '/images/dot-matrix-video.png',
+      icon: (
+        <svg className="w-12 h-12 text-bp-blue" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <rect x="3" y="6" width="14" height="12" rx="2"/>
+          <path d="M17 10l4-2v8l-4-2v-2z"/>
+        </svg>
+      ),
+      features: ['Frame-by-frame filter', 'Threshold + detail', 'Record & download']
+    },
+    {
       id: 'ballparkify',
       name: 'Baseball Idioms',
       description: 'Generate random baseball idioms and slang from a collection of 100+ classic phrases.',
+      previewImage: '/images/ballparkify.png',
       icon: (
         <svg className="w-12 h-12 text-bp-glove" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="9"/>
@@ -324,11 +342,6 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
   const badgeText = index.toString().padStart(2, '0');
   const [badgeDisplay, setBadgeDisplay] = useLandingState(() => scrambleText(badgeText, 0));
 
-  const featureTexts = tool.features;
-  const [featureDisplays, setFeatureDisplays] = useLandingState(() =>
-    featureTexts.map((f) => scrambleText(f, 0))
-  );
-
   const [titleDisplay, setTitleDisplay] = useLandingState(() =>
     scrambleText(titleText, 0)
   );
@@ -366,7 +379,6 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
         setTitleDisplay(scrambleText(titleText, progress));
         setDescDisplay(scrambleText(descText, progress));
         setBadgeDisplay(scrambleText(badgeText, progress));
-        setFeatureDisplays(featureTexts.map((f) => scrambleText(f, progress)));
 
         if (progress < 1) {
           raf = requestAnimationFrame(tick);
@@ -374,7 +386,6 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
           setTitleDisplay(titleText);
           setDescDisplay(descText);
           setBadgeDisplay(badgeText);
-          setFeatureDisplays(featureTexts);
         }
       };
 
@@ -415,12 +426,25 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
         onMouseLeave={() => setIsHovering(false)}
         onMouseMove={handleMove}
       >
-        <div className={`absolute inset-5 border border-dashed rounded pointer-events-none ${isDayGame ? 'border-bp-blue/40' : 'border-bp-eyeblack/40'}`} />
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-xs uppercase text-bp-blue">
-            Drop a GIF preview in this frame
-          </span>
-        </div>
+        {tool.previewImage ? (
+          <img
+            src={tool.previewImage}
+            alt={`${tool.name} preview`}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+            draggable={false}
+          />
+        ) : (
+          <>
+            <div
+              className={`absolute inset-5 border border-dashed rounded pointer-events-none ${
+                isDayGame ? 'border-bp-blue/40' : 'border-bp-eyeblack/40'
+              }`}
+            />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="text-xs uppercase text-bp-blue">Drop a GIF preview in this frame</span>
+            </div>
+          </>
+        )}
 
         {isHovering && (
           <div
@@ -431,7 +455,7 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
               transform: 'translate(-50%, -50%)',
             }}
           >
-            <div className="px-4 py-1 rounded-full bg-bp-blue text-sm uppercase shadow-lg border border-bp-blue font-eyebrow whitespace-nowrap text-bp-chalk">
+            <div className="px-4 py-1 rounded-full bg-bp-blue text-2xl uppercase shadow-lg border border-bp-blue font-eyebrow whitespace-nowrap text-bp-chalk">
               Launch tool
             </div>
           </div>
@@ -452,18 +476,17 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {tool.features.map((feature, i) => (
-            <div
-              key={i}
-              className="text-xs px-3 py-1 rounded-full uppercase font-eyebrow flex items-center gap-2 bg-bp-blue/10 text-bp-blue transition-colors group-hover/callout:bg-bp-chalk group-hover/callout:text-bp-blue"
-            >
-              <div className="w-2 h-2 rounded-full bg-bp-blue" />
-              <div className="w-full">
-                  <span>{featureDisplays[i]}</span>
-              </div>
-            </div>
-          ))}
+        <div className="flex">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectTool(tool.id);
+            }}
+            className="w-full px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity group-hover/callout:bg-bp-chalk group-hover/callout:text-bp-blue"
+          >
+            Launch tool
+          </button>
         </div>
       </div>
 

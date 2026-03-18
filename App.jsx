@@ -1,12 +1,13 @@
 const { useState, useEffect } = React;
 
-const TOOL_ORDER = ['home', 'icon', 'art', 'pattern', 'billboard', 'ballparkify'];
+const TOOL_ORDER = ['home', 'icon', 'art', 'pattern', 'billboard', 'video', 'ballparkify'];
 const TOOL_LABELS = {
   home: 'Home',
   icon: 'Icon',
   art: 'Art',
   pattern: 'Pattern',
   billboard: 'Billboard',
+  video: 'Video',
   ballparkify: 'Idioms',
 };
 
@@ -79,6 +80,16 @@ const toolInfo = {
         <line x1="7" y1="10" x2="7" y2="14"/>
         <line x1="12" y1="10" x2="12" y2="14"/>
         <line x1="17" y1="10" x2="17" y2="14"/>
+      </svg>
+    )
+  },
+  video: {
+    title: 'Dot Matrix Video',
+    description: 'Frame-by-frame video dot filter + recording',
+    icon: (
+      <svg className="w-3 h-3 text-bp-chalk" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <rect x="3" y="6" width="14" height="12" rx="2" />
+        <path d="M17 10l4-2v8l-4-2v-2z" />
       </svg>
     )
   },
@@ -215,6 +226,8 @@ const App = () => {
         <DotPatternGeneratorTool />
       ) : currentTool === 'billboard' ? (
         <DotBillboardTool />
+      ) : currentTool === 'video' ? (
+        <DotMatrixVideoTool />
       ) : (
         <BallparkifyTool />
       )}

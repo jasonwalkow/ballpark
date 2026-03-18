@@ -17,6 +17,9 @@ const DotMatrixArtTool = () => {
   const [dotData, setDotData] = useArtState([]);
 
   const canvasRef = useArtRef(null);
+  const fileInputRef = useArtRef(null);
+  const openFileDialogOnResetRef = useArtRef(false);
+  const hasLoadedDefaultRef = useArtRef(false);
 
   const processImage = useArtCallback(() => {
     if (!imageData) return;
@@ -120,7 +123,9 @@ const DotMatrixArtTool = () => {
   // Load a default example image on first visit so the tool
   // opens with a ready-made artwork that users can tweak or replace.
   useArtEffect(() => {
+    if (hasLoadedDefaultRef.current) return;
     if (imageData) return;
+    hasLoadedDefaultRef.current = true;
 
     let isCancelled = false;
     const img = new Image();
@@ -144,9 +149,17 @@ const DotMatrixArtTool = () => {
   }, [imageData]);
 
   const handleReset = () => {
+    openFileDialogOnResetRef.current = true;
     setImageData(null);
     setDotData([]);
   };
+
+  useArtEffect(() => {
+    if (!openFileDialogOnResetRef.current) return;
+    if (imageData) return; // wait until the dropzone is mounted
+    openFileDialogOnResetRef.current = false;
+    fileInputRef.current?.click();
+  }, [imageData]);
 
   const downloadPNG = () => {
     const canvas = canvasRef.current;
@@ -184,9 +197,8 @@ const DotMatrixArtTool = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const ImageDropzone = ({ onImageLoad }) => {
+  const ImageDropzone = ({ onImageLoad, fileInputRef }) => {
     const [isDragging, setIsDragging] = useArtState(false);
-    const fileInputRef = useArtRef(null);
 
     const processFile = useArtCallback((file) => {
       if (!file.type.startsWith("image/")) return;
@@ -272,7 +284,7 @@ const DotMatrixArtTool = () => {
               </p>
             </div>
             <div className="w-full max-w-xs">
-              <ImageDropzone onImageLoad={handleImageLoad} />
+              <ImageDropzone onImageLoad={handleImageLoad} fileInputRef={fileInputRef} />
             </div>
           </div>
         ) : (
