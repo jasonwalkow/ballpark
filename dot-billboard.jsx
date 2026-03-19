@@ -139,7 +139,7 @@ const DotBillboardTool = () => {
   }, [words, dotSize, spacing, dotColor, backgroundColor, scrollSpeed, isPlaying]);
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen min-h-screen overflow-hidden bg-bp-eyeblack">
+    <div className="flex flex-col md:flex-row md:h-screen min-h-screen overflow-hidden bg-bp-eyeblack relative z-1">
       {/* Generation zone (left) */}
       <div className="flex-1 flex items-center justify-center p-4 md:p-6 overflow-auto bg-bp-eyeblack">
         <div className="border border-bp-blue rounded overflow-hidden shadow-2xl w-full h-full flex items-center justify-center">

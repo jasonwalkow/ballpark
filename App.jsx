@@ -108,7 +108,7 @@ const toolInfo = {
 
 const FloatingToolNav = ({ currentTool, onToolChange, isDayGame }) => {
   return (
-    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50" aria-label="Quick tool navigation">
+    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50" aria-label="Quick tool navigation">
       <div
         className={[
           'pointer-events-auto flex items-center gap-1 rounded-full backdrop-blur px-1 py-1 shadow-[0_18px_50px_rgba(0,0,0,0.35)]',
@@ -208,7 +208,7 @@ const App = () => {
   return (
     <div
       className={[
-        'min-h-screen pb-24',
+        'min-h-screen',
         appLight ? 'bg-bp-mound text-bp-eyeblack' : 'bg-bp-eyeblack text-bp-chalk',
       ].join(' ')}
     >

@@ -928,7 +928,7 @@ const DotMatrixVideoTool = () => {
   const hasVideo = isVideoReady;
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen min-h-screen overflow-hidden bg-bp-eyeblack">
+    <div className="flex flex-col md:flex-row md:h-screen min-h-screen overflow-hidden bg-bp-eyeblack relative z-1">
       <input
         ref={fileInputRef}
         type="file"

@@ -206,7 +206,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
   ];
 
   return (
-    <div className={`min-h-screen text-bp-blue ${isDayGame ? 'bg-bp-mound' : 'bg-bp-eyeblack'}`}>
+    <div className={`min-h-screen text-bp-blue relative z-1 ${isDayGame ? 'bg-bp-mound' : 'bg-bp-eyeblack'}`}>
       <header className={`${isDayGame ? 'bg-bp-mound' : 'bg-bp-eyeblack'}`}>
         <div className="py-4">
           <div className="flex items-start justify-between mb-8 px-4">

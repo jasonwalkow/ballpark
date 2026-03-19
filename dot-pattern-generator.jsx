@@ -248,7 +248,7 @@ const DotPatternGeneratorTool = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen min-h-screen bg-bp-eyeblack">
+    <div className="flex flex-col md:flex-row md:h-screen min-h-screen bg-bp-eyeblack relative z-1">
       <div className="order-2 lg:order-2 w-full md:w-[380px] bg-bp-eyeblack border-l border-bp-eyeblack/60 p-6 overflow-y-auto">
         <section className="sticky top-0 z-10 bg-bp-eyeblack mb-6 border-b border-bp-eyeblack/60 pb-4">
           <h1 className="text-lg md:text-2xl text-bp-blue font-normal mb-1">

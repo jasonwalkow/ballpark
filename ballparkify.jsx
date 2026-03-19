@@ -139,7 +139,7 @@ const BallparkifyTool = () => {
   }, [copyFeedback]);
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen min-h-screen overflow-hidden bg-bp-eyeblack">
+    <div className="flex flex-col md:flex-row md:h-screen min-h-screen overflow-hidden bg-bp-eyeblack relative z-1">
       {/* Left: sandbox/preview */}
       <div className="flex-1 flex items-center justify-center p-4 md:p-6 overflow-auto">
         <div className="bg-bp-eyeblack rounded p-12 text-center shadow-2xl border border-bp-blue w-full h-full flex flex-col justify-center items-center">
