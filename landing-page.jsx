@@ -63,12 +63,18 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
   }, []);
 
   const topEyebrowText = 'BALLPARK TOOLS';
-  const bottomEyebrowText = 'Brand guidelines, in motion.';
+  const bottomEyebrowText = '· Keep it in play ·';
   const [topEyebrowDisplay, setTopEyebrowDisplay] = useLandingState(() =>
     scrambleText(topEyebrowText, 0)
   );
   const [bottomEyebrowDisplay, setBottomEyebrowDisplay] = useLandingState(() =>
     scrambleText(bottomEyebrowText, 0)
+  );
+  const [bottomMarqueeHovered, setBottomMarqueeHovered] = useLandingState(false);
+  const [bottomScatter, setBottomScatter] = useLandingState(() =>
+    Array(bottomEyebrowText.length)
+      .fill(0)
+      .map(() => ({ x: 0, y: 0, r: 0 }))
   );
 
   useLandingEffect(() => {
@@ -311,7 +317,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
         </div>
       </header>
 
-      <main className="w-full px-4 lg:px-6 my-24">
+      <main className="w-full px-4 lg:px-6 my-[90vh]">
         <ol className="space-y-6">
           {tools.map((tool, index) => (
             <ToolRow
@@ -324,8 +330,44 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
           ))}
         </ol>
 
-        <div className="mt-16 text-center text-xs uppercase font-eyebrow">
-          <p>{bottomEyebrowDisplay}</p>
+        <div className="py-16">
+          <div
+            className="overflow-hidden text-center"
+            onMouseEnter={() => {
+              setBottomScatter(
+                Array(bottomEyebrowText.length)
+                  .fill(0)
+                  .map(() => ({
+                    x: (Math.random() - 0.5) * 40,
+                    y: (Math.random() - 0.5) * 20,
+                    r: (Math.random() - 0.5) * 8,
+                  }))
+              );
+              setBottomMarqueeHovered(true);
+            }}
+            onMouseLeave={() => setBottomMarqueeHovered(false)}
+          >
+            <div className="flex gap-1 whitespace-nowrap animate-marquee text-xs uppercase font-eyebrow">
+              {Array.from({ length: 10 }).map((_, copy) => (
+                <span key={copy} className="inline-flex">
+                  {bottomEyebrowDisplay.split('').map((char, i) => (
+                    <span
+                      key={`${copy}-${i}`}
+                      className="inline-block transition-transform duration-300 ease-out"
+                      style={{
+                        transform: bottomMarqueeHovered
+                          ? `translate(${bottomScatter[i].x}px, ${bottomScatter[i].y}px) rotate(${bottomScatter[i].r}deg)`
+                          : 'translate(0,0) rotate(0deg)',
+                        transitionDelay: bottomMarqueeHovered ? `${i * 12}ms` : '0ms',
+                      }}
+                    >
+                      {char === ' ' ? '\u00A0' : char}
+                    </span>
+                  ))}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
     </div>
