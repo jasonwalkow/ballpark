@@ -10,6 +10,35 @@
     <script src="./tailwind-config.js"></script>
   </head>
   <body class="font-brand antialiased">
+    <!-- Looping video background (behind #root) -->
+    <video
+      class="bp-bg-video"
+      src="./videos/homerun-dots.webm"
+      autoplay
+      preload="auto"
+      muted
+      loop
+      playsinline
+      aria-hidden="true"
+    ></video>
+    <script>
+      (function () {
+        const rate = 0.65; // slower playback for the bg loop
+        const v = document.querySelector('video.bp-bg-video');
+        if (!v) return;
+
+        const apply = function () {
+          try {
+            v.playbackRate = rate;
+            // Ensure playback starts with the new rate.
+            v.play().catch(() => {});
+          } catch (e) {}
+        };
+
+        if (v.readyState >= 2) apply();
+        v.addEventListener('loadedmetadata', apply, { once: true });
+      })();
+    </script>
     <div id="root"></div>
 
     <!-- React / ReactDOM -->

@@ -23,14 +23,15 @@ const DotMatrixVideoTool = () => {
   const [isPlaying, setIsPlaying] = useVideoState(false);
   const [mediaType, setMediaType] = useVideoState(null); // 'video' | 'gif'
 
-  const [threshold, setThreshold] = useVideoState(128);
-  const [detailLevel, setDetailLevel] = useVideoState(5);
-  const [brightness, setBrightness] = useVideoState(0);
-  const [contrast, setContrast] = useVideoState(0);
-  const [invertDots, setInvertDots] = useVideoState(false);
+  // Default values tuned to match the "packed blue dots" preview.
+  const [threshold, setThreshold] = useVideoState(97);
+  const [detailLevel, setDetailLevel] = useVideoState(4);
+  const [brightness, setBrightness] = useVideoState(23);
+  const [contrast, setContrast] = useVideoState(100);
+  const [invertDots, setInvertDots] = useVideoState(true);
   const [renderMode, setRenderMode] = useVideoState('dotMatrix'); // dotMatrix | binaryDither
-  const [dotColor, setDotColor] = useVideoState('#1141FF');
-  const [bgColor, setBgColor] = useVideoState('#0a0a0a');
+  const [dotColor, setDotColor] = useVideoState('#FFFFFF');
+  const [bgColor, setBgColor] = useVideoState('#1141FF');
   const [aspectRatio, setAspectRatio] = useVideoState('original'); // original | 1:1 | 4:3 | 16:9 | 9:16 | 21:9
   const [zoom, setZoom] = useVideoState(1.0);
   const [gifReloadToken, setGifReloadToken] = useVideoState(0);
@@ -71,8 +72,13 @@ const DotMatrixVideoTool = () => {
   const recordedChunksRef = useVideoRef([]);
   const ignoreRecordingResultRef = useVideoRef(false);
 
+  // Auto-recording for "upload -> processed -> download".
+  const autoProcessingRef = useVideoRef(false);
+  const autoStopTimerRef = useVideoRef(null);
+
   const objectUrlRef = useVideoRef(null);
   const lastDownloadUrlRef = useVideoRef(null);
+  const hasLoadedDefaultRef = useVideoRef(false);
 
   const settingsRef = useVideoRef({
     threshold,
@@ -101,6 +107,33 @@ const DotMatrixVideoTool = () => {
   useVideoEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+
+  // If the user changes settings, the previously generated download is no longer valid.
+  // Clear the download so the next download always matches the current preview settings.
+  useVideoEffect(() => {
+    if (!videoUrl) return;
+    if (!downloadUrl) return;
+    if (isRecording) return;
+
+    if (lastDownloadUrlRef.current) {
+      try {
+        URL.revokeObjectURL(lastDownloadUrlRef.current);
+      } catch (e) {}
+      lastDownloadUrlRef.current = null;
+    }
+    setDownloadUrl(null);
+  }, [
+    threshold,
+    detailLevel,
+    brightness,
+    contrast,
+    invertDots,
+    renderMode,
+    dotColor,
+    bgColor,
+    zoom,
+    aspectRatio,
+  ]);
 
   const parseAspectRatio = (value) => {
     if (value === 'original') return null;
@@ -451,6 +484,13 @@ const DotMatrixVideoTool = () => {
 
   const cleanupVideo = useVideoCallback(() => {
     stopFrameLoop();
+    if (autoStopTimerRef.current) {
+      try {
+        clearTimeout(autoStopTimerRef.current);
+      } catch (e) {}
+      autoStopTimerRef.current = null;
+    }
+    autoProcessingRef.current = false;
     ignoreRecordingResultRef.current = true;
     setMediaType(null);
 
@@ -534,6 +574,16 @@ const DotMatrixVideoTool = () => {
     return () => videoEl.removeEventListener('loadedmetadata', handleLoadedMetadata);
   }, [videoUrl, updateCanvas, mediaType]);
 
+  // Preload an example clip on first entry so the tool isn't blank.
+  useVideoEffect(() => {
+    if (hasLoadedDefaultRef.current) return;
+    if (videoUrl || mediaType) return;
+
+    hasLoadedDefaultRef.current = true;
+    setMediaType('video');
+    setVideoUrl('/videos/homerun.mp4');
+  }, [videoUrl, mediaType]);
+
   // GIF: load an <img> and drive frame rendering from it.
   useVideoEffect(() => {
     if (!videoUrl) return;
@@ -586,7 +636,8 @@ const DotMatrixVideoTool = () => {
   const startRecording = useVideoCallback(() => {
     if (!canvasRef.current) return;
     if (!supportedMimeType) return;
-    if (isRecording) return;
+    const existing = mediaRecorderRef.current;
+    if (existing && existing.state === 'recording') return;
 
     const canvas = canvasRef.current;
     const stream = canvas.captureStream(30);
@@ -628,8 +679,8 @@ const DotMatrixVideoTool = () => {
       if (v && v.paused) v.play().catch(() => {});
     } catch (e) {}
 
-    recorder.start(1000);
-  }, [isRecording, supportedMimeType]);
+    recorder.start(500);
+  }, [supportedMimeType]);
 
   const stopRecording = useVideoCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -638,6 +689,147 @@ const DotMatrixVideoTool = () => {
       if (recorder.state === 'recording') recorder.stop();
     } catch (e) {}
   }, []);
+
+  const recordProcessedNow = useVideoCallback(() => {
+    if (!canvasRef.current) return;
+    if (!supportedMimeType) return;
+    if (isRecording) return;
+
+    // Clear any prior output so the download always matches current settings.
+    if (lastDownloadUrlRef.current) {
+      try {
+        URL.revokeObjectURL(lastDownloadUrlRef.current);
+      } catch (e) {}
+      lastDownloadUrlRef.current = null;
+    }
+    setDownloadUrl(null);
+
+    // Clear any pending stop timer.
+    if (autoStopTimerRef.current) {
+      try {
+        clearTimeout(autoStopTimerRef.current);
+      } catch (e) {}
+      autoStopTimerRef.current = null;
+    }
+
+    const currentMedia = mediaTypeRef.current;
+
+    // Ensure the canvas is actively rendering frames while we record.
+    if (currentMedia === 'video') {
+      const v = videoRef.current;
+      if (v) {
+        try {
+          v.loop = false;
+          v.currentTime = 0;
+          v.play().catch(() => {});
+        } catch (e) {}
+      }
+      setIsPlaying(true);
+      startFrameLoop();
+      updateCanvas();
+    } else if (currentMedia === 'gif') {
+      setIsPlaying(true);
+      startFrameLoop();
+      updateCanvas();
+    } else {
+      return;
+    }
+
+    startRecording();
+
+    const stopAfterMs = (() => {
+      if (currentMedia === 'gif') return 4500;
+
+      const v = videoRef.current;
+      const d = v && Number.isFinite(v.duration) ? v.duration : NaN;
+      if (!Number.isFinite(d) || d <= 0) return 12000;
+
+      const durationMs = d * 1000 + 400;
+      return Math.min(durationMs, 5 * 60 * 1000); // 5 minutes max
+    })();
+
+    autoStopTimerRef.current = setTimeout(() => {
+      stopRecording();
+      setIsPlaying(false);
+      stopFrameLoop();
+      autoStopTimerRef.current = null;
+    }, stopAfterMs);
+  }, [
+    supportedMimeType,
+    isRecording,
+    startFrameLoop,
+    stopFrameLoop,
+    startRecording,
+    stopRecording,
+    updateCanvas,
+  ]);
+
+  // Auto-process: start MediaRecorder right after the dot-matrix canvas is ready.
+  useVideoEffect(() => {
+    if (!videoUrl || !isVideoReady) return;
+    if (!supportedMimeType) return;
+    if (autoProcessingRef.current) return;
+
+    // Only trigger once per upload.
+    autoProcessingRef.current = true;
+
+    if (autoStopTimerRef.current) {
+      try {
+        clearTimeout(autoStopTimerRef.current);
+      } catch (e) {}
+      autoStopTimerRef.current = null;
+    }
+
+    // For video, record a single pass (not looping forever).
+    if (mediaType === 'video') {
+      const v = videoRef.current;
+      if (v) {
+        try {
+          v.loop = false;
+          v.currentTime = 0;
+        } catch (e) {}
+        try {
+          v.play().catch(() => {});
+        } catch (e) {}
+      }
+    }
+
+    // For GIF, frame rendering is already driven by the tool's play state.
+    if (mediaType === 'gif') {
+      setIsPlaying(true);
+      startFrameLoop();
+    }
+
+    startRecording();
+
+    const stopAfterMs = (() => {
+      if (mediaType === 'gif') return 4500;
+
+      // For video: stop based on duration (plus a small buffer).
+      const v = videoRef.current;
+      const d = v && Number.isFinite(v.duration) ? v.duration : NaN;
+      if (!Number.isFinite(d) || d <= 0) return 12000;
+
+      // Cap to avoid runaway recordings for very long clips.
+      const durationMs = d * 1000 + 400;
+      return Math.min(durationMs, 5 * 60 * 1000); // 5 minutes max
+    })();
+
+    autoStopTimerRef.current = setTimeout(() => {
+      stopRecording();
+      setIsPlaying(false);
+      stopFrameLoop();
+    }, stopAfterMs);
+
+    return () => {
+      if (autoStopTimerRef.current) {
+        try {
+          clearTimeout(autoStopTimerRef.current);
+        } catch (e) {}
+        autoStopTimerRef.current = null;
+      }
+    };
+  }, [videoUrl, isVideoReady, mediaType, supportedMimeType, startFrameLoop, stopFrameLoop, startRecording, stopRecording]);
 
   const fileInputRef = useVideoRef(null);
 
@@ -664,13 +856,10 @@ const DotMatrixVideoTool = () => {
       >
         <div className="flex flex-col items-center gap-4 text-bp-chalk">
           <div className="relative">
-            <svg className="w-10 h-10 opacity-30" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="w-8 h-8 opacity-30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="17 8 12 3 7 8" />
-            </svg>
-            <svg className="w-3 h-3 absolute -bottom-1 -right-1 opacity-60" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
           </div>
 
@@ -760,7 +949,7 @@ const DotMatrixVideoTool = () => {
             <div className="text-center flex flex-col gap-2">
               <h2 className="text-2xl text-bp-chalk">Turn any video or GIF into dot matrix</h2>
               <p className="text-sm text-bp-chalk">
-                Upload a clip, dial in threshold and detail, then record the dot-matrix playback.
+                Upload a clip, dial in threshold and detail, and we'll generate a processed download automatically.
               </p>
             </div>
             <div className="w-full max-w-xs">
@@ -795,13 +984,13 @@ const DotMatrixVideoTool = () => {
           <section className="sticky top-0 z-10 bg-bp-eyeblack mb-6 border-b border-bp-eyeblack/60 pb-4">
             <h1 className="text-lg md:text-2xl text-bp-blue font-normal mb-1">Dot Matrix Video</h1>
             <p className="text-xs text-bp-chalk text-justify">
-              Upload a video, convert it frame-by-frame, and optionally record the result straight from your canvas.
+              Upload a video or GIF; it will be converted frame-by-frame and prepared for download automatically.
             </p>
           </section>
 
           {!hasVideo ? (
             <div className="bg-bp-chalk/5 rounded px-3 py-2 text-bp-chalk/80">
-              Upload a video or GIF to enable controls and recording.
+              Upload a video or GIF to enable controls and start processing.
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -914,17 +1103,21 @@ const DotMatrixVideoTool = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => onSeek(-10)}
-                    disabled={mediaType === 'gif'}
+                    disabled={mediaType === 'gif' || isRecording}
                     className="flex-1 px-3 py-2 bg-bp-blue text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     -10s
                   </button>
-                  <button onClick={onPlayPause} className="flex-1 px-3 py-2 bg-bp-blue text-bp-chalk rounded text-sm">
+                  <button
+                    onClick={onPlayPause}
+                    disabled={isRecording}
+                    className="flex-1 px-3 py-2 bg-bp-blue text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {isPlaying ? 'Pause' : 'Play'}
                   </button>
                   <button
                     onClick={() => onSeek(10)}
-                    disabled={mediaType === 'gif'}
+                    disabled={mediaType === 'gif' || isRecording}
                     className="flex-1 px-3 py-2 bg-bp-blue text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     +10s
@@ -932,14 +1125,19 @@ const DotMatrixVideoTool = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <button onClick={onReplay} className="flex-1 px-3 py-2 bg-bp-blue text-bp-chalk rounded text-sm">
+                  <button
+                    onClick={onReplay}
+                    disabled={isRecording}
+                    className="flex-1 px-3 py-2 bg-bp-blue text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Replay
                   </button>
                   <button
                     onClick={() => {
                       if (fileInputRef.current) fileInputRef.current.click();
                     }}
-                    className="flex-1 px-3 py-2 bg-bp-eyeblack border border-bp-blue/60 text-bp-chalk rounded text-sm"
+                    disabled={isRecording}
+                    className="flex-1 px-3 py-2 bg-bp-eyeblack border border-bp-blue/60 text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Upload new
                   </button>
@@ -950,45 +1148,29 @@ const DotMatrixVideoTool = () => {
 
           <div className="mt-auto sticky bottom-0 z-10 bg-bp-eyeblack pt-4 flex flex-col gap-4">
             <div className="bg-bp-chalk/5 rounded px-3 py-2 flex flex-col gap-3">
-              <h2 className="text-sm text-bp-chalk">Recording</h2>
+              <h2 className="text-sm text-bp-chalk">Download</h2>
 
               {!supportedMimeType ? (
                 <p className="text-xs text-bp-chalk/80 leading-relaxed">
-                  Recording isn’t supported in this browser. You can still preview the dot-matrix frames.
+                  Downloading isn’t supported in this browser. You can still preview the dot-matrix frames.
                 </p>
+              ) : downloadUrl ? (
+                <a
+                  href={downloadUrl}
+                  download="dot-matrix-video.webm"
+                  className="px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm text-center"
+                >
+                  Download Processed Video
+                </a>
               ) : (
-                <>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={startRecording}
-                      disabled={isRecording}
-                      className="flex-1 px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Start Recording
-                    </button>
-                    <button
-                      onClick={stopRecording}
-                      disabled={!isRecording}
-                      className="flex-1 px-4 py-2 bg-bp-eyeblack border border-bp-blue/60 text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Stop
-                    </button>
-                  </div>
-
-                  {downloadUrl ? (
-                    <a
-                      href={downloadUrl}
-                      download="dot-matrix-video.webm"
-                      className="px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm text-center"
-                    >
-                      Download Processed Video
-                    </a>
-                  ) : (
-                    <p className="text-xs text-bp-chalk/80 leading-relaxed">
-                      Recording output appears after you stop.
-                    </p>
-                  )}
-                </>
+                <button
+                  type="button"
+                  onClick={recordProcessedNow}
+                  disabled={isRecording}
+                  className="px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isRecording ? 'Processing…' : 'Download Processed Video'}
+                </button>
               )}
             </div>
 

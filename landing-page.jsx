@@ -465,7 +465,7 @@ const ToolRow = ({ index, tool, onSelectTool, isDayGame }) => {
       {/* Right column: meta card */}
       <div className="bg-transparent border border-bp-blue rounded p-4 md:p-8 flex flex-col justify-between space-y-4 group-hover/callout:bg-bp-blue gap-8">
         <div className="flex flex-col gap-3 text-bp-blue">
-          <div className="w-8 h-8 flex items-center justify-center text-sm uppercase font-eyebrow rounded-full bg-bp-blue text-bp-eyeblack group-hover/callout:bg-bp-chalk group-hover/callout:text-bp-blue transition-colors">
+          <div className={`w-8 h-8 flex items-center justify-center text-sm uppercase font-eyebrow rounded-full bg-bp-blue ${isDayGame ? 'text-bp-mound' : 'text-bp-eyeblack'} group-hover/callout:bg-bp-chalk group-hover/callout:text-bp-blue transition-colors`}>
             {badgeDisplay}
           </div>
           <h2 className="text-xl lg:text-4xl tracking-tight group-hover/callout:text-bp-chalk">

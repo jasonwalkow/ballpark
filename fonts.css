@@ -43,6 +43,46 @@
 html,
 body {
   background-color: #1141FF;
+  min-height: 100vh;
+}
+
+.bp-bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  filter: blur(10px);
+  animation: bpRootBlurIn 650ms ease-out both;
+}
+
+@keyframes bpRootBlurIn {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #root {
+    animation: none;
+    opacity: 1;
+    filter: none;
+  }
 }
 
 @media (min-width: 768px) {
