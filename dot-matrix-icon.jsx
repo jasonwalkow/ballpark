@@ -77,6 +77,8 @@ function computeDotGrid(imageData, gridSize, threshold, invertMode) {
 
 const DotMatrixIconTool = () => {
   const [imageData, setImageData] = useIconState(null);
+  /** After "Upload new image", stay on the dropzone instead of re-loading the default example. */
+  const [skipDefaultImage, setSkipDefaultImage] = useIconState(false);
   const [threshold, setThreshold] = useIconState(80);
   const [dotColor, setDotColor] = useIconState("#1141FF");
   const [bgColor, setBgColor] = useIconState("#0a0a0a");
@@ -87,6 +89,8 @@ const DotMatrixIconTool = () => {
   const gap = 1;
 
   const canvasRef = useIconRef(null);
+  const fileInputRef = useIconRef(null);
+  const openFileDialogOnResetRef = useIconRef(false);
 
   const handleImageLoad = useIconCallback((data, { skipInvertDetection = false } = {}) => {
     if (!skipInvertDetection) {
@@ -97,6 +101,8 @@ const DotMatrixIconTool = () => {
   }, []);
 
   const handleReset = useIconCallback(() => {
+    setSkipDefaultImage(true);
+    openFileDialogOnResetRef.current = true;
     setImageData(null);
     setThreshold(80);
     setDotColor("#1141FF");
@@ -168,6 +174,7 @@ const DotMatrixIconTool = () => {
   // feels immediately useful before the user uploads anything.
   useIconEffect(() => {
     if (imageData) return;
+    if (skipDefaultImage) return;
 
     let isCancelled = false;
     const img = new Image();
@@ -188,7 +195,15 @@ const DotMatrixIconTool = () => {
     return () => {
       isCancelled = true;
     };
-  }, [imageData, handleImageLoad]);
+  }, [imageData, handleImageLoad, skipDefaultImage]);
+
+  // After reset, open the OS file picker once the dropzone (and hidden input) is mounted.
+  useIconEffect(() => {
+    if (!openFileDialogOnResetRef.current) return;
+    if (imageData) return;
+    openFileDialogOnResetRef.current = false;
+    fileInputRef.current?.click();
+  }, [imageData]);
 
   const downloadPNG = () => {
     const canvas = canvasRef.current;
@@ -249,9 +264,8 @@ ${crispCircles}  </g>
     URL.revokeObjectURL(url);
   };
 
-  const ImageDropzone = ({ onImageLoad }) => {
+  const ImageDropzone = ({ onImageLoad, fileInputRef }) => {
     const [isDragging, setIsDragging] = useIconState(false);
-    const fileInputRef = useIconRef(null);
 
     const processFile = useIconCallback((file) => {
       if (!file.type.startsWith("image/")) return;
@@ -339,7 +353,7 @@ ${crispCircles}  </g>
               </p>
             </div>
             <div className="w-full max-w-xs">
-              <ImageDropzone onImageLoad={handleImageLoad} />
+              <ImageDropzone onImageLoad={handleImageLoad} fileInputRef={fileInputRef} />
             </div>
           </div>
         ) : (
@@ -438,7 +452,16 @@ ${crispCircles}  </g>
                   <p className="text-xs text-bp-chalk leading-relaxed">
                     Upload a new image to start over, or adjust the controls to fine-tune your dot matrix icon.
                   </p>
-                  <button onClick={handleReset} className="mt-3 text-sm text-bp-blue hover:text-bp-chalk cursor-pointer transition-colors">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="mt-3 w-full px-4 py-2 bg-bp-blue text-bp-chalk rounded text-sm flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
                     Upload new image
                   </button>
                 </div>

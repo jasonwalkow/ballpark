@@ -317,7 +317,7 @@ const LandingPage = ({ onSelectTool, isDayGame, onToggleDayGame }) => {
         </div>
       </header>
 
-      <main className="w-full px-4 lg:px-6 my-[90vh]">
+      <main className="w-full px-4 lg:px-6 mb-[90vh] pt-32">
         <ol className="space-y-6">
           {tools.map((tool, index) => (
             <ToolRow

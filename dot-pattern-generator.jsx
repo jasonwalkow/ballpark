@@ -5,6 +5,19 @@ const {
   useEffect: usePatternEffect,
 } = React;
 
+/** Fixed Ballpark palette — dots only use these; toggle each swatch on/off. */
+const BRAND_DOT_PALETTE = [
+  { hex: '#1141FF', label: 'Blue' },
+  { hex: '#F3EFE3', label: 'Mound' },
+  { hex: '#F3EFFE', label: 'Chalk' },
+  { hex: '#F3E8B5', label: 'Mustard' },
+  { hex: '#D4E4FF', label: 'Sky' },
+  { hex: '#EAC9ED', label: 'Gum' },
+  { hex: '#DEB5A4', label: 'Glove' },
+  { hex: '#CEDC9E', label: 'Grass' },
+  { hex: '#F3EFE3', label: 'Mound' },
+];
+
 const DotPatternGeneratorTool = () => {
   const [width, setWidth] = usePatternState(1200);
   const [height, setHeight] = usePatternState(800);
@@ -17,17 +30,12 @@ const DotPatternGeneratorTool = () => {
   const [centerQuietRadius, setCenterQuietRadius] = usePatternState(0.34);
   const [centerSoftness, setCenterSoftness] = usePatternState(0.56);
   const [organicJitter, setOrganicJitter] = usePatternState(0.45);
-  const [seed, setSeed] = usePatternState('pattern-001');
-  
-  const [colors, setColors] = usePatternState([
-    '#1141FF',
-    '#DEB5A4',
-    '#CEDC9E',
-    '#EAC9ED',
-    '#F5E5A3',
-    '#F3EFFE',
-    '#D4E4FF'
-  ]);
+  // Default seed + palette match the on-brand preview (corner-weighted field, soft center quiet zone).
+  const [seed, setSeed] = usePatternState('pattern-mf46hf');
+
+  const [colorEnabled, setColorEnabled] = usePatternState(() =>
+    BRAND_DOT_PALETTE.map(() => true)
+  );
 
   const canvasRef = usePatternRef(null);
   const [dotCount, setDotCount] = usePatternState(0);
@@ -73,6 +81,13 @@ const DotPatternGeneratorTool = () => {
     }
     const clusterCells = Math.max(2, Math.round(60 / gridSpacing));
 
+    const enabledIndices = BRAND_DOT_PALETTE.map((_, i) => i).filter((i) => colorEnabled[i]);
+    const nEnabled = enabledIndices.length;
+    const pickPaletteHex = (clusterHash) => {
+      if (nEnabled === 0) return BRAND_DOT_PALETTE[0].hex;
+      return BRAND_DOT_PALETTE[enabledIndices[Math.abs(clusterHash) % nEnabled]].hex;
+    };
+
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         let nx = cols > 1 ? x / (cols - 1) : 0.5;
@@ -109,8 +124,8 @@ const DotPatternGeneratorTool = () => {
           const clusterX = Math.floor(x / clusterCells);
           const clusterY = Math.floor(y / clusterCells);
           const clusterHash = (clusterX * 73856093) ^ (clusterY * 19349663) ^ seedHash;
-          const color = colors[Math.abs(clusterHash) % colors.length];
-          
+          const color = pickPaletteHex(clusterHash);
+
           const px = x * gridSpacing + gridSpacing / 2;
           const py = y * gridSpacing + gridSpacing / 2;
 
@@ -124,27 +139,21 @@ const DotPatternGeneratorTool = () => {
     }
 
     setDotCount(count);
-  }, [width, height, bgColor, transparent, gridSpacing, dotSize, cornerIntensity, falloff, centerQuietRadius, centerSoftness, organicJitter, seed, colors]);
+  }, [width, height, bgColor, transparent, gridSpacing, dotSize, cornerIntensity, falloff, centerQuietRadius, centerSoftness, organicJitter, seed, colorEnabled]);
 
   usePatternEffect(() => {
     generatePattern();
   }, [generatePattern]);
 
-  const addColor = () => {
-    setColors([...colors, '#F9F9F9']);
-  };
-
-  const removeColor = (index) => {
-    if (colors.length > 1) {
-      setColors(colors.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateColor = (index, value) => {
-    const newColors = [...colors];
-    newColors[index] = value.startsWith('#') ? value : '#' + value;
-    setColors(newColors);
-  };
+  const togglePaletteColor = usePatternCallback((index) => {
+    setColorEnabled((prev) => {
+      const next = [...prev];
+      const onCount = next.filter(Boolean).length;
+      if (next[index] && onCount <= 1) return prev;
+      next[index] = !next[index];
+      return next;
+    });
+  }, []);
 
   const randomSeed = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -191,6 +200,13 @@ const DotPatternGeneratorTool = () => {
     }
     const clusterCells = Math.max(2, Math.round(60 / gridSpacing));
 
+    const enabledIndices = BRAND_DOT_PALETTE.map((_, i) => i).filter((i) => colorEnabled[i]);
+    const nEnabled = enabledIndices.length;
+    const pickPaletteHex = (clusterHash) => {
+      if (nEnabled === 0) return BRAND_DOT_PALETTE[0].hex;
+      return BRAND_DOT_PALETTE[enabledIndices[Math.abs(clusterHash) % nEnabled]].hex;
+    };
+
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n`;
     if (!transparent) svg += `  <rect width="${width}" height="${height}" fill="${bgColor}"/>\n`;
 
@@ -227,7 +243,7 @@ const DotPatternGeneratorTool = () => {
           const clusterX = Math.floor(x / clusterCells);
           const clusterY = Math.floor(y / clusterCells);
           const clusterHash = (clusterX * 73856093) ^ (clusterY * 19349663) ^ seedHash;
-          const color = colors[Math.abs(clusterHash) % colors.length];
+          const color = pickPaletteHex(clusterHash);
           const px = x * gridSpacing + gridSpacing / 2;
           const py = y * gridSpacing + gridSpacing / 2;
           svg += `  <circle cx="${px}" cy="${py}" r="${dotSize/2}" fill="${color}"/>\n`;
@@ -291,28 +307,33 @@ const DotPatternGeneratorTool = () => {
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-bp-chalk">Dot Colors</label>
-              <button onClick={addColor} className="text-xs px-2 py-1 bg-bp-blue text-bp-chalk rounded">
-                + Add
-              </button>
+            <div>
+              <label className="text-sm text-bp-chalk">Dot palette</label>
+              <p className="text-xs text-bp-chalk/70 mt-1">
+                Brand colors only — turn swatches off to exclude them from the pattern.
+              </p>
             </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {colors.map((color, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input type="color" value={color} onChange={e => updateColor(i, e.target.value)}
-                    className="w-10 h-9 rounded bg-bp-chalk/5 cursor-pointer" />
-                  <div className="flex-1 relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-bp-chalk text-xs">#</span>
-                    <input type="text" value={color.replace('#', '')}
-                      onChange={e => updateColor(i, '#' + e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6))}
-                      maxLength={6}
-                      className="w-full bg-bp-chalk/5 text-bp-chalk pl-6 pr-2 py-2 rounded text-xs font-mono uppercase" />
-                  </div>
-                  {colors.length > 1 && (
-                    <button onClick={() => removeColor(i)} className="text-bp-blue hover:text-bp-chalk text-xl w-6 h-6 transition-colors">×</button>
-                  )}
-                </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {BRAND_DOT_PALETTE.map((swatch, i) => (
+                <label
+                  key={swatch.hex}
+                  className="flex gap-3 items-center cursor-pointer rounded px-2 py-1.5 hover:bg-bp-chalk/5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={colorEnabled[i]}
+                    onChange={() => togglePaletteColor(i)}
+                    className="w-4 h-4 shrink-0 accent-bp-blue rounded border-bp-chalk/30"
+                    aria-label={`Include ${swatch.label} dots`}
+                  />
+                  <span
+                    className="w-7 h-7 shrink-0 rounded border border-bp-chalk/25 shadow-inner"
+                    style={{ backgroundColor: swatch.hex }}
+                    aria-hidden
+                  />
+                  <span className="flex-1 min-w-0 text-sm text-bp-chalk">{swatch.label}</span>
+                  <span className="text-xs font-mono text-bp-chalk/60 shrink-0">{swatch.hex}</span>
+                </label>
               ))}
             </div>
           </div>
